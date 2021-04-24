@@ -1,0 +1,159 @@
+<!-- wp:html -->
+<script src="https://cdn.plot.ly/plotly-1.52.3.min.js" charset="utf-8"></script>
+<div class="wrapper wrapper-default wrapper-variable-lg wrapper-no-padding-top wrapper-no-padding-bottom bg-light">
+<div class="container">
+<div class="row">
+   <div class="col">
+        <div id="allVehicles"></div>
+   </div>
+ </div>
+        <div class="row  mt-4 mb-4">
+       <div id="allVehiclesTable" class="col col-sm-6 offset-sm-3"></div> 
+        </div>
+        <div class="row mb-4">
+            <div class="col">
+        <div id="passenagerVehicles"></div>
+            </div>
+        </div>
+        <div class="row mb-4">
+        <div id="passenagerVehiclesTable" class="col"></div>
+        </div>
+        <div class="row mb-4">
+            <div class="col">
+        <div id="goodsVehicles"></div>
+            </div>
+        </div>
+        <div class="row mb-4">
+        <div id="goodsVehiclesTable" class="col"></div>
+        </div>
+</div>
+</div>
+<script>
+  
+
+async function plotPie(fname, divId){
+  Plotly.d3.csv(fname, (table1)=>{
+      const data = [{
+        values: table1.map(d=>d.num),
+        labels: table1.map(d=>d.vehicleType),
+        type: "pie",
+        textinfo: "label+percent",
+        insidetextorientation: "radial",
+        hole: 0.1,
+      }];
+
+  let layout = {
+    showlegend: true,
+    legend: {"orientation": "h",
+              font: {size: "10"},
+            },
+    autosize: true,
+    margin: {
+        l: 0,
+        r: 0,
+        b: 100,
+        t: 100,
+        // pad:4
+      },
+  };
+  let config = {displaylogo: false, 
+    displayModeBar: false,
+  };
+  
+  Plotly.newPlot(divId, data,  layout, config);
+    //Add data table
+    const d3 = Plotly.d3;
+    let table = d3.select("#"+divId+"Table")
+    .append("table")
+    .attr("class", "table table-light text-dark")
+    .style("font-size", "10px") ;
+
+    table.append("thead").append("tr")
+          .attr("class", "text-info")
+          .selectAll("th")
+          .data(Object.keys(table1[0]))
+          .enter().append("th")
+          .text((d)=>d);
+    table.append("tbody")
+          .selectAll("tr").data(table1)
+          .enter().append("tr")
+          .selectAll("td")
+          .data((d)=> { return Object.values(d)})
+          .enter().append("td")
+          .text((d)=> d);
+    });
+  }
+
+plotPie("https://www.deolcarsolutions.co.nz/wp-content/uploads/2021/04/table1.csv", "allVehicles");
+
+function getStackBarData(data){
+  const years = ["1980 - 1989", "1990 - 1999", "2000 - 2009", "2010 - 2019", "2020 - 2029"];
+  const colors  = Plotly.d3.scale.category20();
+  let color_index  = 0;
+  const stackBarData = data.map( d=> {
+    let color = colors(color_index);
+    color_index += 1;
+    return {x: years,
+    y: years.map(year => d[year]),
+    name: d["Fuel Type"],
+    marker:{
+      color: color
+    },
+    type: 'bar',
+    }}
+  )
+  return stackBarData;
+}
+function plotStackedBar(fname, divId){
+  Plotly.d3.csv(fname, (table2)=>{
+    const licencedVehicles = table2.filter(d=> d["Licence Status"] === "Licensed (1)");
+    licencedVehicles.forEach(element => {
+      delete element["Licence Status"];
+	  delete element["Pre - 1970"];
+	  delete element["1970 - 1979"];
+    });
+    const d3 = Plotly.d3;
+    let table = d3.select("#"+divId+"Table")
+    .append("table")
+    .attr("class", "table table-light text-dark")
+    .style("font-size", "10px") ;
+
+    table.append("thead").append("tr")
+          .attr("class", "text-info m-0")
+          .selectAll("th")
+          .data(Object.keys(licencedVehicles[0]))
+          .enter().append("th")
+          .text((d)=>d);
+    table.append("tbody")
+          .selectAll("tr").data(licencedVehicles)
+          .enter().append("tr")
+		  .attr("class", "m-0")
+          .selectAll("td")
+          .data((d)=> { return Object.values(d)})
+          .enter().append("td")
+          .text((d)=> d);
+    
+    const colors  = Plotly.d3.scale.category20();
+    const data = getStackBarData(licencedVehicles)
+    let layout = {autosize: true, 
+      barmode: 'stack',
+      showlegend: true,
+	  margin: {pad: 0,
+	  l: 0,
+	  r: 0},
+      legend: {"orientation": "h",
+              font: {size: "10"}
+            },
+    }
+    let config = {displaylogo: false,
+       displayModeBar: false,
+      };
+    Plotly.newPlot(divId, data, layout, config)
+
+  })
+}
+
+plotStackedBar("https://www.deolcarsolutions.co.nz/wp-content/uploads/2021/04/table2.csv", "passenagerVehicles");
+plotStackedBar("https://www.deolcarsolutions.co.nz/wp-content/uploads/2021/04/table3.csv", "goodsVehicles");
+</script>
+<!-- /wp:html -->

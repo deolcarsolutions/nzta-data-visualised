@@ -39,7 +39,7 @@ def top10Cars(df, month, pmonth):
     """
     currentMonth = pickSubCols(df, month)
     pastMonth = pickSubCols(df, pmonth)
-
+    htmlList = []
     print("make, ccount, count changep, position change")
     cpos = 1
     for cmake, ccount in zip(currentMonth['Vehicle make'], currentMonth['Count of vehicles']):
@@ -50,14 +50,78 @@ def top10Cars(df, month, pmonth):
             pcount = int(row['Count of vehicles'])
             print(cmake, ccount, "{:} ({:.1f}%)".format(ccount-pcount, (ccount-pcount)/pcount*100),
                   ppos-cpos)
+            htmlList.append([cmake, ccount,
+                             "{:} ({:.1f}%)".format(ccount-pcount,
+                                                    (ccount-pcount)/pcount*100),
+                             ppos-cpos])
         else:
             print(cmake, ccount)
+            htmlList.append([cmake, ccount, '-', '-'])
         cpos += 1
 
-    return currentMonth, pastMonth
+    return currentMonth, pastMonth, htmlList
 
 
-c, p = top10Cars(table6, 'mar', 'feb')
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+
+def bsTableBody(htmlList):
+    thead = """
+    <thead class="thead-inverse text-center">
+    <tr>
+    <th>Make</th>
+    <th class="text-center">Count</th>
+    <th class="text-center">Count Change</th>
+    <th class="text-center">Position Change</th>
+    </tr>
+    </thead>
+    """
+    tbody = """
+    <tbody>
+    """
+    for row in htmlList:
+        make, count, countDiff, posDiff = row
+        make = '<th class="text-primary">{:}</th>'.format(make)
+        count = '<td>{:}</td>'.format(count)
+        countDiff = '<td>{:}</td>'.format(countDiff)
+        if is_number(posDiff):
+            icon = '<i class="fa fa-arrow-up fa-lg text-success"/>'if int(
+                posDiff) >= 0 else '<i class="fa fa-arrow-down fa-lg text-danger"/>'
+        else:
+            icon = ""
+        posDiff = '<td> {:}  {:}</td>'.format(
+            icon,
+            posDiff)
+
+        tr = """
+        <tr >
+        {:}
+        {:}
+        {:}
+        {:}
+        </tr>
+        """.format(make,
+                   count, countDiff, posDiff)
+        tbody += tr
+    tbody = "\n".join([tbody,
+                       "</tbody>"])
+    table = """
+    <table class="table text-center table-bordered">
+    """
+    table = "\n".join([table,
+                       thead,
+                       tbody,
+                       "</table>"])
+    return table
+
+
+c, p, table6HtmlList = top10Cars(table6, 'mar', 'feb')
+print(bsTableBody(table6HtmlList))
 # print(table1)
 #table1.to_csv("../data/"+yearmonth+"/"+basename+"-table1.csv", index=False)
 # table2.to_csv("../data/"+yearmonth+"/table2.csv", index=False)
